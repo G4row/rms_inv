@@ -25,13 +25,13 @@
     <div class="container">
         <form id="qrForm">
             <label>Proizvod ID:</label>
-            <input type="text" id="product" name="product" readonly>
+            <input type="text" id="itemId" name="itemId" readonly>
             
             <label>Količina:</label>
-            <input type="text" id="quantity" name="quantity" readonly>
+            <input type="text" id="qty" name="qty" readonly>
             
             <label>Batch (Serija):</label>
-            <input type="text" id="batch" name="batch" readonly>
+            <input type="text" id="productBatchId" name="productBatchId" readonly>
             
             <hr>
             
@@ -54,9 +54,9 @@
                     // Očekuje format: {"productID":"oznaka","quantity":"kolicina","batch":"oznaka"}
                     const data = JSON.parse(decodedText);
                     
-                    document.getElementById('itemId').value = data.itemId || "";
-                    document.getElementById('qty').value = data.quantity || "";
-                    document.getElementById('inventBatchId').value = data.batch || "";
+                    document.getElementById("itemId").value = data.itemId || "";
+                    document.getElementById("qty").value = data.quantity || "";
+                    document.getElementById("inventBatchId").value = data.batch || "";
 
                     // Prelazak na korak 2
                     currentStep = 2;
