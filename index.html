@@ -62,16 +62,16 @@
                     return "";
                 };
 
-                extractedProduct = getValue("itemId");
+                extractedItemId = getValue("itemId");
                 extractedQty = getValue("qty");
-                extractedBatch = getValue("inventedBatchId");
+                extractedInventedBatchId = getValue("inventedBatchId");
 
                 // Ako nismo našli pod ključem "product", probajmo "productID"
-                if (!extractedItemId) extractedProduct = getValue("itemId");
+                if (!extractedItemId) extractedItemId = getValue("itemId");
 
                 document.getElementById('itemId').value = extractedItemId;
                 document.getElementById('qty').value = extractedQty;
-                document.getElementById('inventedBatchId').value = extractedBatch;
+                document.getElementById('inventedBatchId').value = extractedIventedBatchId;
 
                 if (extractedProduct || extractedQty) {
                     currentStep = 2;
