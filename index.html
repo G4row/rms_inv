@@ -48,37 +48,39 @@
         let currentStep = 1;
 
         function onScanSuccess(decodedText) {
-            try {
-                if (currentStep === 1) {
-                    // Parsiranje JSON-a iz QR koda
-                    // Očekuje format: {"productID":"oznaka","quantity":"kolicina","batch":"oznaka"}
-                    const data = JSON.parse(decodedText);
-                    
-                    document.getElementById("itemId").value = data.itemId || "";
-                    document.getElementById("qty").value = data.quantity || "";
-                    document.getElementById("inventBatchId").value = data.batch || "";
+    try {
+        if (currentStep === 1) {
+            // 1. Pokušavamo da popravimo format ako fale zagrade ili su korišćeni pogrešni navodnici
+            let cleanText = decodedText.trim();
+            if (!cleanText.startsWith("{")) cleanText = "{" + cleanText + "}";
+            
+            // Zamena običnih navodnika ako su slučajno kosi (često kod kopiranja)
+            cleanText = cleanText.replace(/['‘’“”]/g, '"');
 
-                    // Prelazak na korak 2
-                    currentStep = 2;
-                    statusBox.innerText = "KORAK 2: Skeniraj QR lokacije";
-                    statusBox.className = "status step-2";
+            // 2. Parsiranje
+            const data = JSON.parse(cleanText);
+            
+            // Mapiranje podataka (proveravamo i productID i batch/batc zbog greške u kucanju)
+            document.getElementById('product').value = data.productID || "";
+            document.getElementById('quantity').value = data.quantity || "";
+            document.getElementById('batch').value = data.batch || data.batc || ""; // Podržava oba naziva
 
-                } else if (currentStep === 2) {
-                    // Drugi sken popunjava samo lokaciju
-                    document.getElementById('location').value = decodedText;
-                    document.getElementById('submitBtn').disabled = false;
-                    statusBox.innerText = "Spremno za slanje!";
-                    statusBox.style.background = "#c8e6c9";
-                    statusBox.style.color = "#2e7d32";
-                }
-            } catch (e) {
-                if (currentStep === 1) {
-                    alert("Greška: QR kod nije u ispravnom JSON formatu.");
-                } else {
-                    document.getElementById('location').value = decodedText; // Ako lokacija nije JSON
-                }
-            }
+            currentStep = 2;
+            statusBox.innerText = "KORAK 2: Skeniraj QR lokacije";
+            statusBox.className = "status step-2";
+
+        } else if (currentStep === 2) {
+            document.getElementById('location').value = decodedText;
+            document.getElementById('submitBtn').disabled = false;
+            statusBox.innerText = "Spremno za slanje!";
+            statusBox.style.background = "#c8e6c9";
         }
+    } catch (e) {
+        console.error("Greška pri parsiranju:", e);
+        // Ako JSON totalno ne uspe, ispiši sirovi tekst u polje 'Product' da vidiš šta kamera zapravo vidi
+        alert("Skenirano: " + decodedText + "\n\nGreška: QR mora biti u formatu {\"productID\":\"...\"}");
+    }
+}
 
         let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
         html5QrcodeScanner.render(onScanSuccess);
