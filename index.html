@@ -31,7 +31,7 @@
             <input type="text" id="qty" name="qty" readonly>
             
             <label>Batch (Serija):</label>
-            <input type="text" id="productBatchId" name="productBatchId" readonly>
+            <input type="text" id="inventBatchId" name="inventBatchId" readonly>
             
             <hr>
             
@@ -50,35 +50,49 @@
         function onScanSuccess(decodedText) {
     try {
         if (currentStep === 1) {
-            // 1. Pokušavamo da popravimo format ako fale zagrade ili su korišćeni pogrešni navodnici
-            let cleanText = decodedText.trim();
-            if (!cleanText.startsWith("{")) cleanText = "{" + cleanText + "}";
-            
-            // Zamena običnih navodnika ako su slučajno kosi (često kod kopiranja)
-            cleanText = cleanText.replace(/['‘’“”]/g, '"');
+            console.log("Skenirano:", decodedText);
 
-            // 2. Parsiranje
-            const data = JSON.parse(cleanText);
-            
-            // Mapiranje podataka (proveravamo i productID i batch/batc zbog greške u kucanju)
-            document.getElementById('itemId').value = data.itemId || "";
-            document.getElementById('qty').value = data.qty || "";
-            document.getElementById('inventBatchId').value = data.inventBatchId || data.inventBatchId || ""; // Podržava oba naziva
+            // Funkcija koja traži vrijednost bilo kojeg ključa (npr. traži "product":"VRIJEDNOST")
+            const extractValue = (key) => {
+                // Ovaj regex traži ključnu riječ, preskače navodnike i dvotačku, i uzima tekst
+                const regex = new RegExp(`"${key}"\\s*:\\s*"([^"]+)"|'${key}'\\s*:\\s*'([^']+)'|${key}\\s*:\\s*([^,}]+)`);
+                const match = decodedText.match(regex);
+                if (match) {
+                    // Vraća prvu grupu koja nije prazna (podržava " , ' ili bez navodnika)
+                    return match[1] || match[2] || match[3];
+                }
+                return "";
+            };
 
-            currentStep = 2;
-            statusBox.innerText = "KORAK 2: Skeniraj QR lokacije";
-            statusBox.className = "status step-2";
+            // Izvlačenje podataka
+            const prod = extractValue("itemId");
+            const q = extractValue("qty");
+            const b = extractValue("inventBatchId");
+
+            // Popunjavanje forme (uklanjamo eventualne višak razmake)
+            document.getElementById('itemId').value = item.trim();
+            document.getElementById('qty').value = qty.trim();
+            document.getElementById('inventBatchId').value = invent.trim();
+
+            // Ako barem nešto imamo od podataka, idemo na korak 2
+            if (prod || q || b) {
+                currentStep = 2;
+                statusBox.innerText = "KORAK 2: Skeniraj QR lokacije";
+                statusBox.className = "status step-2";
+            } else {
+                alert("QR prepoznat kao tekst, ali ne vidim ključeve 'product', 'qty' ili 'batch'. Skenirano: " + decodedText);
+            }
 
         } else if (currentStep === 2) {
-            document.getElementById('location').value = decodedText;
+            // Drugi sken samo uzima tekst lokacije
+            document.getElementById('location').value = decodedText.trim();
             document.getElementById('submitBtn').disabled = false;
             statusBox.innerText = "Spremno za slanje!";
             statusBox.style.background = "#c8e6c9";
         }
     } catch (e) {
-        console.error("Greška pri parsiranju:", e);
-        // Ako JSON totalno ne uspe, ispiši sirovi tekst u polje 'Product' da vidiš šta kamera zapravo vidi
-        alert("Skenirano: " + decodedText + "\n\nGreška: QR mora biti u formatu {\"productID\":\"...\"}");
+        console.error("Greška:", e);
+        alert("Sistemska greška pri čitanju: " + e.message);
     }
 }
 
