@@ -65,9 +65,9 @@
             };
 
             // Izvlačenje podataka
-            const prod = extractValue("itemId");
-            const q = extractValue("qty");
-            const b = extractValue("inventBatchId");
+            const item = extractValue("itemId");
+            const qty = extractValue("qty");
+            const invent = extractValue("inventBatchId");
 
             // Popunjavanje forme (uklanjamo eventualne višak razmake)
             document.getElementById('itemId').value = item.trim();
