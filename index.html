@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Skladište</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        #reader { width: 100%; max-width: 400px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-top: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; background: #fafafa; }
+        .status { padding: 15px; margin-bottom: 15px; border-radius: 5px; text-align: center; font-weight: bold; width: 100%; max-width: 370px; }
+        .step-1 { background: #e3f2fd; color: #1976d2; }
+        .step-2 { background: #fff3e0; color: #f57c00; }
+        button { width: 100%; padding: 15px; background: #2e7d32; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+    <div id="statusBox" class="status step-1">KORAK 1: Skeniraj QR proizvoda</div>
+    <div id="reader"></div>
+
+    <div class="container">
+        <form id="qrForm">
+            <label>Proizvod ID:</label>
+            <input type="text" id="product" name="product" readonly>
+            
+            <label>Količina:</label>
+            <input type="text" id="quantity" name="quantity" readonly>
+            
+            <label>Batch (Serija):</label>
+            <input type="text" id="batch" name="batch" readonly>
+            
+            <hr>
+            
+            <label>Lokacija:</label>
+            <input type="text" id="location" name="location" placeholder="Čeka skeniranje lokacije..." readonly>
+            
+            <button type="submit" id="submitBtn" disabled>Završi i pošalji</button>
+        </form>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxmu_Am0sGdnzxKiNUlqDucqPbaWiLR-q4mjL3FLPszX-c8OtHowfxSburInwokQv7giQ/exec';
+        const statusBox = document.getElementById('statusBox');
+        let currentStep = 1;
+
+        function onScanSuccess(decodedText) {
+            try {
+                if (currentStep === 1) {
+                    // Parsiranje JSON-a iz QR koda
+                    // Očekuje format: {"productID":"oznaka","quantity":"kolicina","batch":"oznaka"}
+                    const data = JSON.parse(decodedText);
+                    
+                    document.getElementById('itemId').value = data.itemId || "";
+                    document.getElementById('qty').value = data.quantity || "";
+                    document.getElementById('inventBatchId').value = data.batch || "";
+
+                    // Prelazak na korak 2
+                    currentStep = 2;
+                    statusBox.innerText = "KORAK 2: Skeniraj QR lokacije";
+                    statusBox.className = "status step-2";
+
+                } else if (currentStep === 2) {
+                    // Drugi sken popunjava samo lokaciju
+                    document.getElementById('location').value = decodedText;
+                    document.getElementById('submitBtn').disabled = false;
+                    statusBox.innerText = "Spremno za slanje!";
+                    statusBox.style.background = "#c8e6c9";
+                    statusBox.style.color = "#2e7d32";
+                }
+            } catch (e) {
+                if (currentStep === 1) {
+                    alert("Greška: QR kod nije u ispravnom JSON formatu.");
+                } else {
+                    document.getElementById('location').value = decodedText; // Ako lokacija nije JSON
+                }
+            }
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+
+        const form = document.getElementById('qrForm');
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "Slanje...";
+            btn.disabled = true;
+
+            fetch(scriptURL, { method: 'POST', body: new FormData(form)})
+                .then(response => {
+                    alert('Uspešno upisano u Google Sheet!');
+                    location.reload(); 
+                })
+                .catch(error => {
+                    alert('Greška pri slanju!');
+                    btn.disabled = false;
+                    btn.innerText = "Završi i pošalji";
+                });
+        });
+    </script>
+</body>
+</html>
